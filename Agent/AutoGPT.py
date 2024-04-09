@@ -50,6 +50,7 @@ class AutoGPT:
             work_dir: str = "./data",
             main_prompt_file: str = "./prompts/main/main.json",
             final_prompt_file: str = "./prompts/main/final_step.json",
+            ask_prompt_file: str = "./prompts/main/ask_step.txt",
             max_thought_steps: Optional[int] = 4,
             memery_retriever: Optional[VectorStoreRetriever] = None,
     ):
@@ -63,7 +64,7 @@ class AutoGPT:
         self.output_parser = PydanticOutputParser(pydantic_object=Action)
         self.robust_parser = OutputFixingParser.from_llm(parser=self.output_parser, llm=self.llm)
 
-        self.ask_prompt_file = "./prompts/main/ask_step.txt"
+        self.ask_prompt_file = ask_prompt_file
         self.main_prompt_file = main_prompt_file
         self.final_prompt_file = final_prompt_file
 
@@ -129,6 +130,7 @@ class AutoGPT:
             response += s
 
         action = self.robust_parser.parse(response)
+        print('任务：',action)
         return action, response
 
     def __final_step(self, short_term_memory, task_description) -> str:
@@ -149,6 +151,10 @@ class AutoGPT:
                 short_term_memory
             ),
         })
+        print('提出问题的对话：',self.__format_short_term_memory(
+                short_term_memory
+            ))
+        print('提出问题：',response)
         return response
         
     def __exec_action(self, action: Action) -> str:
@@ -156,7 +162,7 @@ class AutoGPT:
         tool = self.__find_tool(action.name)
         if tool is None:
             observation = (
-                f"Error: 找不到工具或指令 '{action.name}'. "
+                f"Error: 找不到工具或指令 '{action.name}'. "+
                 f"请从提供的工具/指令列表中选择，请确保按对顶格式输出。"
             )
         else:
@@ -230,7 +236,8 @@ class AutoGPT:
 
         # 思考步数
         thought_step_count = 0
-
+        action=None
+        response=""
         # 开始逐步思考
         while thought_step_count < self.max_thought_steps:
             if verbose:
@@ -265,7 +272,16 @@ class AutoGPT:
         if thought_step_count >= self.max_thought_steps:
             # 如果思考步数达到上限，返回错误信息
             reply = "抱歉，我没能完成您的任务。"
-        elif action.name == "ASK":
+        elif action is not None and action.name == "ASK":
+            # 执行动作
+            observation = self.__exec_action(action)
+            self.__show_observation(observation, verbose)
+            if observation is None:
+                observation=""
+            # 更新短时记忆
+            self.__update_short_term_memory(
+                short_term_memory, response, observation
+            )
             # 提问，补充问题
             reply = self.__ask_step(short_term_memory, task_description)
         else:
