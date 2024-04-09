@@ -43,8 +43,14 @@ ask_placeholder = StructuredTool.from_function(
     name="ASK",
     description="用于表示向用户提问的占位符工具"
 )
+appointment_registration_placeholder = StructuredTool.from_function(
+    func=lambda: None,
+    name="APPOINTMENT",
+    description="用于表示预约挂号占位符工具"
+)
 finish_placeholder = StructuredTool.from_function(
     func=lambda: None,
     name="FINISH",
     description="用于表示任务完成的占位符工具"
 )
+

@@ -14,7 +14,7 @@ from langchain_community.chat_models import ChatZhipuAI
 import gradio as gr
 
 agent=None
-
+welcome_message="您有什么症状？"
 def launch_agent(agent: AutoGPT):
     human_icon = "\U0001F468"
     ai_icon = "\U0001F916"
@@ -26,18 +26,24 @@ def launch_agent(agent: AutoGPT):
         reply = agent.run(task, verbose=True)
         print(f"{ai_icon}：{reply}\n")
     """
+    global welcome_message
     # 初始化 gradio
     demo = gr.ChatInterface(chat, additional_inputs=[
-        gr.Textbox("你是一个调皮的机器人，幽默地回答任何问题", label="System Message"),
+        gr.Textbox("你是一个医院智能导诊系统，准确简明地回答导诊相关问题", label="System Message"),
         gr.Slider(minimum=0.0, maximum=2.0, step=0.1,
                   value=0.7, label="Temperature")
-        
-    ],
-        
-    undo_btn=None,
-    clear_btn=None,
-    retry_btn=None,
-    submit_btn='发送')
+        ],
+        textbox=gr.Textbox(placeholder='请输入您的症状...', container=False, scale=8),
+        title='XX医院智能导诊系统',
+        description=welcome_message,
+        #examples=[[welcome_message], ['您的症状是什么？']], 
+        ##cache_examples=[[welcome_message], ['您的症状是什么？']], 
+        undo_btn=None,
+        clear_btn=None,
+        retry_btn=None,
+        submit_btn='发送',
+        ##welcome_message=welcome_message
+    )
 
     # 启动 gradio
     demo.queue().launch()
@@ -72,12 +78,12 @@ async def chat(prompt, history, system_message, temperature):
         yield "".join(response).strip()
     """
     global agent
-    task = "根据患者的症状，导诊需要挂的科室;AI:有什么症状？患者:"+prompt
+    task = "根据患者的症状，导诊需要挂的科室;AI:您有什么症状？"
     for human_message, ai_message in history:
-        task+="AI:"+ai_message 
-        task+="患者:"+human_message 
+        task+="患者:"+human_message+";"
+        task+="AI:"+ai_message+"?"
     
-        
+    task+="患者:"+prompt+";"
     reply = agent.run(task, verbose=True)
     return reply
 
@@ -105,17 +111,17 @@ def main():
 
     # 自定义工具集
     tools = [
-        document_qa_tool,
-        document_generation_tool,
+        #document_qa_tool,
+        #document_generation_tool,
         #email_tool,
-        excel_inspection_tool,
-        directory_inspection_tool,
+        #excel_inspection_tool,
+        #directory_inspection_tool,
         ask_placeholder,
         finish_placeholder,
-        ExcelAnalyser(
-            prompt_file="./prompts/tools/excel_analyser.txt",
-            verbose=True
-        ).as_tool()
+        # ExcelAnalyser(
+            # prompt_file="./prompts/tools/excel_analyser.txt",
+            # verbose=True
+        # ).as_tool()
     ]
     global agent
     # 定义智能体

@@ -50,7 +50,7 @@ class AutoGPT:
             work_dir: str = "./data",
             main_prompt_file: str = "./prompts/main/main.json",
             final_prompt_file: str = "./prompts/main/final_step.json",
-            max_thought_steps: Optional[int] = 10,
+            max_thought_steps: Optional[int] = 4,
             memery_retriever: Optional[VectorStoreRetriever] = None,
     ):
         self.llm = llm
